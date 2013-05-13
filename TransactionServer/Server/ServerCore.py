@@ -1,4 +1,4 @@
-import logging
+from Utils.Logger import Logger
 
 class ServerCore(object):
 	
@@ -6,6 +6,6 @@ class ServerCore(object):
 		return
 
 	def start(self, port = 10000):
-		logger = logging.getLogger("server_logger")
-		logger.info("Starting server...")
+		log = Logger.getLogger()
+		log.info("Starting server...")
 		return

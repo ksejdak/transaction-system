@@ -1,5 +1,5 @@
 import sys
-import logging
+from Utils.Logger import Logger
 
 from Server.ServerCore import ServerCore
 
@@ -7,23 +7,16 @@ def main(argv = None):
 	if(argv is None):
 		argv = sys.argv
 	
-	#logging.basicConfig(format = "[%(levelname)s] %(message)s", level=logging.DEBUG)
-	logger = logging.getLogger("server_logger")
-	ch = logging.StreamHandler()
-	ch.setLevel(logging.DEBUG)
-	formatter = logging.Formatter("[%(levelname)s] %(message)s")
-	ch.setFormatter(formatter)
-	logger.setLevel(logging.DEBUG)
-	logger.addHandler(ch)
+	Logger.initLogger()
+	log = Logger.getLogger()
 	
-	#if(len(argv) != 2):
-	#	logger.error("Port not specified!" "")
-	#	return 1
+	if(len(argv) != 2):
+		log.error("Port not specified!" "")
+		return 1
 		
 	server = ServerCore()
-	#port = int(argv[1])
-	#server.start(port)
-	server.start()
+	port = int(argv[1])
+	server.start(port)
 
 if __name__ == '__main__':
 	sys.exit(main())
