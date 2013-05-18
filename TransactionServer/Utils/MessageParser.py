@@ -20,7 +20,10 @@ class MessageParser(object):
 			return "commit"
 		elif(message[0] == "A" or message[0] == "a"):
 			return "abort"
+		else:
+			self.__data = message
+			return "invalid"
 	
 	def getData(self):
+		self.__data = self.__data.rstrip()
 		return self.__data
-			

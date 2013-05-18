@@ -10,14 +10,16 @@ def main(argv = None):
 	Logger.initLogger()
 	log = Logger.getLogger()
 	
-	if(len(argv) != 3):
-		log.error("IP or port not specified!" "")
+	if(len(argv) != 4):
+		log.error("IP, port or server name not specified!")
+		log.info("usage: transction-server <IP> <Port> <Name>")
 		return 1
 		
 	server = ServerCore()
-	ip = argv[1]
-	port = int(argv[2])
-	server.start(ip, port)
+	serverIP = argv[1]
+	serverPort = int(argv[2])
+	serverName = argv[3]
+	server.start(serverIP, serverPort, serverName)
 
 if __name__ == '__main__':
 	sys.exit(main())

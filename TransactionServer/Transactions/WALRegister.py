@@ -6,7 +6,7 @@ class WALRegister(object):
 	
 	def checkConsistency(self):
 		# TODO: check if all transactions are finished
-		return []
+		return
 	
 	def logBegin(self, transactionId):
 		return
