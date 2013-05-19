@@ -11,9 +11,6 @@ class ServerCore(object):
 		
 		# prepare WAL register (nothing happens if WAL is already initialized
 		walRegister = WALRegister()
-		initialized = walRegister.initWAL()
-		if(initialized == False):
-			log.error("Initializing WAL register failed! Shutting down server...")
 		
 		# check WAL register consistency
 		walRegister.checkConsistency()
