@@ -10,7 +10,7 @@ class ServerCore(object):
 		log.info("Starting server...")
 		
 		# prepare WAL register (nothing happens if WAL is already initialized
-		walRegister = WALRegister()
+		walRegister = WALRegister(name)
 		
 		# check WAL register consistency
 		walRegister.checkConsistency()

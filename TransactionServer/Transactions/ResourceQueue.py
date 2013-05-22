@@ -45,6 +45,9 @@ class ResourceQueue(object):
 				time.sleep(1)
 				if(time.time() - startTime >= DEADLOCK_TIMEOUT):
 					self.__log.error("deadlock detected")
+					values = (transactionId,)
+					c.execute("DELETE FROM ResourceQueue WHERE id = ?", values)
+					dbConnection.commit()
 					break;
 		
 		dbConnection.close()

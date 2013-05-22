@@ -20,7 +20,7 @@ class TransactionThread(Thread):
 		self.__transactionId = transactionId
 		self.__messageParser = MessageParser()
 		self.__file = FileWorker(self.__serverName)
-		self.__walRegister = WALRegister()
+		self.__walRegister = WALRegister(self.__serverName)
 		self.__resource = ResourceQueue()
 		self.__resourceOwned = False
 		
@@ -40,7 +40,7 @@ class TransactionThread(Thread):
 			request = self.__socket.recv(512)
 			if(request == ""):
 				self.__log.info("Connection closed in thread [%s]", self.__name)
-				self.__abort()
+				self.__walRegister.emergencyAbort(self.__transactionId, True)
 				self.__log.info("Exiting transaction thread [%s]", self.__name)
 				thread.exit()
 
@@ -50,13 +50,23 @@ class TransactionThread(Thread):
 	
 	def __begin(self):
 		self.__log.debug("__begin called")
+		
+		# check if transaction is already started
 		if(self.__walRegister.isStarted(self.__transactionId) == False):
 			self.__walRegister.logBegin(self.__transactionId)
 			self.__socket.send("HELLO:" + self.__transactionId)
+		else:
+			self.__sendERR()
 	
 	def __end(self):
 		self.__log.debug("__end called")
+		
+		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			# check if transaction is commited
+			if(self.__walRegister.isCommited(self.__transactionId) == False):
+				self.__abort()
+				
 			self.__resource.unlock(self.__transactionId)
 			self.__resourceOwned = False
 			self.__walRegister.logEnd(self.__transactionId)
@@ -68,38 +78,68 @@ class TransactionThread(Thread):
 
 	def __read(self):
 		self.__log.debug("__read called")
+		
+		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
 			data = self.__file.read()
 			self.__socket.send("READ:" + data)
+		else:
+			self.__sendERR()
 	
 	def __write(self):
 		self.__log.debug("__write called")
+		
+		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			# check if resource is already locked
 			if(self.__resourceOwned == False):
 				self.__log.debug("locking resource")
-				self.__resource.lock(self.__transactionId)
-				self.__log.debug("resource locked")
-				self.__resourceOwned = True
+				# try to lock resource
+				if(self.__resource.lock(self.__transactionId) == False):
+					self.__socket.send("DEADLOCK DETECTED:" + self.__transactionId)
+					return
+				else:
+					self.__log.debug("resource locked")
+					self.__resourceOwned = True
 	
+			# write data
 			newData = self.__messageParser.getData()
 			oldData = self.__file.read()
 			self.__walRegister.logWrite(self.__transactionId, oldData, newData)
 			self.__file.write(newData)
 			self.__socket.send("WRITE:" + newData)
+		else:
+			self.__sendERR()
 	
 	def __commit(self):
 		self.__log.debug("__commit called")
+		
+		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			# TODO: implement two-phase commiting
 			self.__walRegister.logCommit(self.__transactionId)
 			self.__socket.send("COMMIT:" + self.__transactionId)
+		else:
+			self.__sendERR()
 	
 	def __abort(self):
 		self.__log.debug("__abort called")
+		
+		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			self.__walRegister.emergencyAbort(self.__transactionId)
 			self.__walRegister.logAbort(self.__transactionId)
 			self.__socket.send("ABORT:" + self.__transactionId)
+		else:
+			self.__sendERR()
 	
 	def __reject(self):
 		self.__log.debug("__reject called")
 		self.__log.debug("Invalid request: [%s]", self.__messageParser.getData())
 		self.__socket.send("ERROR: invalid request [" + self.__messageParser.getData() + "]")
+	
+	def __sendERR(self):
+		self.__socket.send("ERR:" + self.__transactionId)
+
+	def __sendOK(self):
+		self.__socket.send("OK:" + self.__transactionId)
