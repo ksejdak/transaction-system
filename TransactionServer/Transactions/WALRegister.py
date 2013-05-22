@@ -14,53 +14,91 @@ class WALRegister(object):
 			self.__log.debug("DB file doesn't exists, creating...")
 		
 		dbConnection = sqlite3.connect(self.__dbName)  # @UndefinedVariable
+		c = dbConnection.cursor()
 		
 		# check if WAL table exists within database
-		c = dbConnection.cursor()
-		c.execute("CREATE TABLE IF NOT EXISTS WALRegister (id VARCHAR(20), command VARCHAR(5), before VARCHAR(200), after VARCHAR(200))")
+		c.execute("CREATE TABLE IF NOT EXISTS WALRegister (id VARCHAR(20), command VARCHAR(5), before VARCHAR(200), after VARCHAR(200), timestamp VARCHAR(20))")
 		
 		dbConnection.close()
 	
 	def checkConsistency(self):
-		# TODO: check if all transactions are finished
+		dbConnection = sqlite3.connect(self.__dbName)  # @UndefinedVariable
+		c = dbConnection.cursor()
+		
+		# gather information about each transaction
+		startedTransactions = []
+		commitedTransactions = []
+		finishedTransactions = []
+		transactionLogs = c.execute("SELECT * FROM WALRegister WHERE command <> 'W'")
+		for log in transactionLogs:
+			if(log["command"] == "BT"):
+				startedTransactions.append(log["id"])
+			elif(log["command"] == "C"):
+				commitedTransactions.append(log["id"])
+			elif(log["command"] == "ET"):
+				finishedTransactions.append(log["id"])
+		
+		# check if all are finished
+		toAbortTransactions = []
+		toCommitTransactions = []
+		for t in startedTransactions:
+			if(t not in finishedTransactions):
+				if(t in commitedTransactions):
+					toCommitTransactions.append(t)
+				else:
+					toAbortTransactions.append(t)
+		
+		# repair WAL
+		self.__repair(toAbortTransactions, toCommitTransactions)
+		
+		dbConnection.close()
+	
+	def abortTransaction(self, transactionId):
 		return
+
+	def isStarted(self, transactionId):
+		# TODO: check if transaction is started in WAL
+		return True
 	
 	def logBegin(self, transactionId):
-		dbConnection = sqlite3.connect(self.__dbName)		  # @UndefinedVariable
+		dbConnection = sqlite3.connect(self.__dbName)		# @UndefinedVariable
 		c = dbConnection.cursor()
 		values = (transactionId, "BT", "", "")
-		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?)", values)
+		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?, DateTime('now'))", values)
 		dbConnection.commit()
 		dbConnection.close()
 	
 	def logEnd(self, transactionId):
-		dbConnection = sqlite3.connect(self.__dbName)		  # @UndefinedVariable
+		dbConnection = sqlite3.connect(self.__dbName)		# @UndefinedVariable
 		c = dbConnection.cursor()
 		values = (transactionId, "ET", "", "")
-		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?)", values)
+		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?, DateTime('now'))", values)
 		dbConnection.commit()
 		dbConnection.close()
 	
 	def logWrite(self, transactionId, oldData, newData):
-		dbConnection = sqlite3.connect(self.__dbName)		  # @UndefinedVariable
+		dbConnection = sqlite3.connect(self.__dbName)		# @UndefinedVariable
 		c = dbConnection.cursor()
 		values = (transactionId, "W", oldData, newData)
-		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?)", values)
+		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?, DateTime('now'))", values)
 		dbConnection.commit()
 		dbConnection.close()
 	
 	def logCommit(self, transactionId):
-		dbConnection = sqlite3.connect(self.__dbName)		  # @UndefinedVariable
+		dbConnection = sqlite3.connect(self.__dbName)		# @UndefinedVariable
 		c = dbConnection.cursor()
 		values = (transactionId, "C", "", "")
-		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?)", values)
+		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?, DateTime('now'))", values)
 		dbConnection.commit()
 		dbConnection.close()
 	
 	def logAbort(self, transactionId):
-		dbConnection = sqlite3.connect(self.__dbName)		  # @UndefinedVariable
+		dbConnection = sqlite3.connect(self.__dbName)		# @UndefinedVariable
 		c = dbConnection.cursor()
 		values = (transactionId, "A", "", "")
-		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?)", values)
+		c.execute("INSERT INTO WALRegister VALUES (?, ?, ?, ?, DateTime('now'))", values)
 		dbConnection.commit()
 		dbConnection.close()
+
+	def __repair(self, toAbortTransactions, toCommitTransactions):
+		return

@@ -4,6 +4,7 @@ from Utils.MessageParser import MessageParser
 from Utils.Logger import Logger
 from Utils.FileWorker import FileWorker
 from WALRegister import WALRegister
+from ResourceQueue import ResourceQueue
 
 class TransactionThread(Thread):
 	
@@ -20,6 +21,8 @@ class TransactionThread(Thread):
 		self.__messageParser = MessageParser()
 		self.__file = FileWorker(self.__serverName)
 		self.__walRegister = WALRegister()
+		self.__resource = ResourceQueue()
+		self.__resourceOwned = False
 		
 		# create functions mapping
 		self.__handlers = {
@@ -47,39 +50,54 @@ class TransactionThread(Thread):
 	
 	def __begin(self):
 		self.__log.debug("__begin called")
-		self.__walRegister.logBegin(self.__transactionId)
-		self.__socket.send("HELLO:" + self.__transactionId)
+		if(self.__walRegister.isStarted(self.__transactionId) == False):
+			self.__walRegister.logBegin(self.__transactionId)
+			self.__socket.send("HELLO:" + self.__transactionId)
 	
 	def __end(self):
 		self.__log.debug("__end called")
-		self.__walRegister.logEnd(self.__transactionId)
-		self.__socket.send("BYE:" + self.__transactionId)
-		self.__log.info("Exiting transaction thread [%s]", self.__name)
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			self.__resource.unlock(self.__transactionId)
+			self.__resourceOwned = False
+			self.__walRegister.logEnd(self.__transactionId)
+			self.__socket.send("BYE:" + self.__transactionId)
+
 		self.__socket.close()
+		self.__log.info("Exiting transaction thread [%s]", self.__name)
 		thread.exit()
 
 	def __read(self):
 		self.__log.debug("__read called")
-		data = self.__file.read()
-		self.__socket.send("READ:" + data)
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			data = self.__file.read()
+			self.__socket.send("READ:" + data)
 	
 	def __write(self):
 		self.__log.debug("__write called")
-		newData = self.__messageParser.getData()
-		oldData = self.__file.read()
-		self.__walRegister.logWrite(self.__transactionId, oldData, newData)
-		self.__file.write(newData)
-		self.__socket.send("WRITE:" + newData)
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			if(self.__resourceOwned == False):
+				self.__log.debug("locking resource")
+				self.__resource.lock(self.__transactionId)
+				self.__log.debug("resource locked")
+				self.__resourceOwned = True
+	
+			newData = self.__messageParser.getData()
+			oldData = self.__file.read()
+			self.__walRegister.logWrite(self.__transactionId, oldData, newData)
+			self.__file.write(newData)
+			self.__socket.send("WRITE:" + newData)
 	
 	def __commit(self):
 		self.__log.debug("__commit called")
-		self.__walRegister.logCommit(self.__transactionId)
-		self.__socket.send("COMMIT:" + self.__transactionId)
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			self.__walRegister.logCommit(self.__transactionId)
+			self.__socket.send("COMMIT:" + self.__transactionId)
 	
 	def __abort(self):
 		self.__log.debug("__abort called")
-		self.__walRegister.logAbort(self.__transactionId)
-		self.__socket.send("ABORT:" + self.__transactionId)
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
+			self.__walRegister.logAbort(self.__transactionId)
+			self.__socket.send("ABORT:" + self.__transactionId)
 	
 	def __reject(self):
 		self.__log.debug("__reject called")
