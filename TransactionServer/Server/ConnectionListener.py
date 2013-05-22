@@ -1,5 +1,4 @@
 import socket
-from TransactionRegister import TransactionRegister
 from Transactions.TransactionThread import TransactionThread
 from Utils.Logger import Logger
 
@@ -36,7 +35,6 @@ class ConnectionListener(object):
 				return
 			
 			self.__log.info("Client connected: %s:%d", clientAddress[0], clientAddress[1])
-			transactionRegister = TransactionRegister()
-			transactionId = transactionRegister.add(clientAddress[0], clientAddress[1])
+			transactionId = clientAddress[0] + ":" + str(clientAddress[1])
 			thread = TransactionThread(self.__serverName, clientSocket, transactionId)
 			thread.start()
