@@ -32,18 +32,30 @@ class WALRegister(object):
 		# gather information about each transaction
 		startedTransactions = []
 		commitedTransactions = []
+		writeTransactions = []
 		finishedTransactions = []
-		transactionLogs = c.execute("SELECT * FROM WALRegister WHERE command <> 'W'")
+		#transactionLogs = c.execute("SELECT * FROM WALRegister WHERE command <> 'W' ORDER BY timestamp DESC")
+		transactionLogs = c.execute("SELECT * FROM WALRegister ORDER BY timestamp DESC")
 
 		# check if there is any tranaction		
 		if(c.rowcount is not None):
 			for log in transactionLogs:
+				# if this id is already in startedTransactions, it means that any other records with this id belong to other transaction
+				if(log[0] in startedTransactions):
+					continue
+				
 				if(log[1] == "BT"):
-					startedTransactions.append(log[0])
+					if(log[0] not in startedTransactions):
+						startedTransactions.append(log[0])
+				elif(log[1] == "W"):
+					if(log[0] not in writeTransactions):
+						writeTransactions.append(log[0])
 				elif(log[1] == "C"):
-					commitedTransactions.append(log[0])
+					if((log[0] not in commitedTransactions) and (log[0] not in writeTransactions)):
+						commitedTransactions.append(log[0])
 				elif(log[1] == "ET"):
-					finishedTransactions.append(log[0])
+					if(log[0] not in finishedTransactions):
+						finishedTransactions.append(log[0])
 			
 			# check if all are finished
 			toAbortTransactions = []
@@ -61,32 +73,71 @@ class WALRegister(object):
 		dbConnection.close()
 	
 	def emergencyAbort(self, transactionId, emergency = False):
+		self.__log.debug("emergencyAbort called...")
+		
 		dbConnection = sqlite3.connect(self.__dbName)  # @UndefinedVariable
 		c = dbConnection.cursor()
 
 		# gather information about this transaction
 		restoredValue = ""
+		writeDone = False
 		values = (transactionId,)
 		for log in c.execute("SELECT * FROM WALRegister WHERE id = ? ORDER BY timestamp DESC", values):
 			# if command is BT or C than we should stop, other data should be saved permanently
 			if(log[1] == "BT" or log[1] == "C"):
-				break;
+				break
 			
 			# if command is W, check what was the previous value
 			if(log[1] == "W"):
+				writeDone = True
 				restoredValue = log[2]
 		
-		
 		# restore resource value
-		self.__file.write(restoredValue)
+		if(writeDone == True):
+			self.__file.write(restoredValue)
 		
 		# clean up if abort is forced after server crash
+		dbConnection.close()
 		if(emergency == True):
 			self.logAbort(transactionId)
 			self.logEnd(transactionId)
 			self.__resource.unlock(transactionId)
+	
+	def emergencyCommit(self, transactionId, emergency = False):
+		self.__log.debug("emergencyCommit called...")
+
+		dbConnection = sqlite3.connect(self.__dbName)  # @UndefinedVariable
+		c = dbConnection.cursor()
+
+		# gather information about this transaction
+		commitedValue = ""
+		writeDone = False
+		values = (transactionId,)
+		for log in c.execute("SELECT * FROM WALRegister WHERE id = ? ORDER BY timestamp DESC", values):
+			# if command is BT, then we should stop
+			if(log[1] == "BT"):
+				break
+			
+			# if command is C, we should skip it
+			if(log[1] == "C"):
+				continue
+			
+			# if command is W, check what was the modified value
+			if(log[1] == "W"):
+				writeDone = True
+				commitedValue = log[3]
+				break
+
+		# restore resource value
+		if(writeDone == True):
+			self.__file.write(commitedValue)
 		
+		# clean up if commit is forced after server crash
 		dbConnection.close()
+		if(emergency == True):
+			self.logCommit(transactionId)
+			self.logEnd(transactionId)
+			self.__resource.unlock(transactionId)
 
 	def isStarted(self, transactionId):
 		dbConnection = sqlite3.connect(self.__dbName)  # @UndefinedVariable
@@ -172,8 +223,4 @@ class WALRegister(object):
 		
 		# commit transactions that were commited by not finished
 		for t in toCommitTransactions:
-			self.__commitTransactions(t)
-	
-	def __commitTransactions(self, transactionId):
-		# TODO: implement
-		return
+			self.emergencyCommit(t, True)

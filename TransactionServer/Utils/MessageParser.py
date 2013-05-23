@@ -6,9 +6,9 @@ class MessageParser(object):
 	def parse(self, message):
 		if(message[0] == "R" or message[0] == "r"):
 			return "read"
-		elif(message[0] == "W" or message[0] == "w"):
+		elif(message[:2] == "W:" or message[:2] == "w:"):
 			# save string to be written to file
-			self.__data = message[1:]
+			self.__data = message[2:]
 			return "write"
 		elif(message[:2] == "BT" or message[:2] == "bt"):
 			# save timestamp of the transaction
@@ -18,6 +18,8 @@ class MessageParser(object):
 			return "end"
 		elif(message[0] == "C" or message[0] == "c"):
 			return "commit"
+		elif(message[:2] == "GC" or message[:2] == "gc"):
+			return "globalCommit"
 		elif(message[0] == "A" or message[0] == "a"):
 			return "abort"
 		else:

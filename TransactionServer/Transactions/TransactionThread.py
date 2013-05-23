@@ -31,6 +31,7 @@ class TransactionThread(Thread):
 			"read": self.__read,
 			"write": self.__write,
 			"commit": self.__commit,
+			"globalCommit": self.__globalCommit,
 			"abort": self.__abort,
 			"invalid": self.__reject
 		}
@@ -66,9 +67,7 @@ class TransactionThread(Thread):
 			# check if transaction is commited
 			if(self.__walRegister.isCommited(self.__transactionId) == False):
 				self.__abort()
-				
-			self.__resource.unlock(self.__transactionId)
-			self.__resourceOwned = False
+
 			self.__walRegister.logEnd(self.__transactionId)
 			self.__socket.send("BYE:" + self.__transactionId)
 
@@ -116,8 +115,23 @@ class TransactionThread(Thread):
 		
 		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
-			# TODO: implement two-phase commiting
+			self.__sendOK()
+		else:
+			self.__sendERR()
+	
+	def __globalCommit(self):
+		self.__log.debug("__globalCommit called")
+		
+		# check if transaction is started
+		if(self.__walRegister.isStarted(self.__transactionId) == True):
 			self.__walRegister.logCommit(self.__transactionId)
+			self.__walRegister.emergencyCommit(self.__transactionId)
+			# check if we had locked a resource
+			if(self.__resourceOwned == True):
+				self.__resource.unlock(self.__transactionId)
+				self.__resourceOwned = False
+				self.__log.debug("resource unlocked")
+
 			self.__socket.send("COMMIT:" + self.__transactionId)
 		else:
 			self.__sendERR()
@@ -129,6 +143,11 @@ class TransactionThread(Thread):
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
 			self.__walRegister.emergencyAbort(self.__transactionId)
 			self.__walRegister.logAbort(self.__transactionId)
+			# check if we had locked a resource
+			if(self.__resourceOwned == True):
+				self.__resource.unlock(self.__transactionId)
+				self.__resourceOwned = False
+				self.__log.debug("resource unlocked")
 			self.__socket.send("ABORT:" + self.__transactionId)
 		else:
 			self.__sendERR()
