@@ -135,7 +135,6 @@ class WALRegister(object):
 		# clean up if commit is forced after server crash
 		dbConnection.close()
 		if(emergency == True):
-			self.logCommit(transactionId)
 			self.logEnd(transactionId)
 			self.__resource.unlock(transactionId)
 

@@ -41,7 +41,7 @@ class TransactionThread(Thread):
 			request = self.__socket.recv(512)
 			if(request == ""):
 				self.__log.info("Connection closed in thread [%s]", self.__name)
-				self.__walRegister.emergencyAbort(self.__transactionId, True)
+				self.__walRegister.emergeBYEncyAbort(self.__transactionId, True)
 				self.__log.info("Exiting transaction thread [%s]", self.__name)
 				thread.exit()
 
@@ -55,7 +55,7 @@ class TransactionThread(Thread):
 		# check if transaction is already started
 		if(self.__walRegister.isStarted(self.__transactionId) == False):
 			self.__walRegister.logBegin(self.__transactionId)
-			self.__socket.send("HELLO:" + self.__transactionId)
+			self.__socket.send("HELLO")
 		else:
 			self.__sendERR()
 	
@@ -81,7 +81,7 @@ class TransactionThread(Thread):
 		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
 			data = self.__file.read()
-			self.__socket.send("READ:" + data)
+			self.__sendOK(data)
 		else:
 			self.__sendERR()
 	
@@ -106,7 +106,7 @@ class TransactionThread(Thread):
 			oldData = self.__file.read()
 			self.__walRegister.logWrite(self.__transactionId, oldData, newData)
 			self.__file.write(newData)
-			self.__socket.send("WRITE:" + newData)
+			self.__sendOK()
 		else:
 			self.__sendERR()
 	
@@ -124,15 +124,15 @@ class TransactionThread(Thread):
 		
 		# check if transaction is started
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
-			self.__walRegister.logCommit(self.__transactionId)
 			self.__walRegister.emergencyCommit(self.__transactionId)
+			self.__walRegister.logCommit(self.__transactionId)
 			# check if we had locked a resource
 			if(self.__resourceOwned == True):
 				self.__resource.unlock(self.__transactionId)
 				self.__resourceOwned = False
 				self.__log.debug("resource unlocked")
 
-			self.__socket.send("COMMIT:" + self.__transactionId)
+			self.__sendOK()
 		else:
 			self.__sendERR()
 	
@@ -148,17 +148,23 @@ class TransactionThread(Thread):
 				self.__resource.unlock(self.__transactionId)
 				self.__resourceOwned = False
 				self.__log.debug("resource unlocked")
-			self.__socket.send("ABORT:" + self.__transactionId)
+			self.__sendOK()
 		else:
 			self.__sendERR()
 	
 	def __reject(self):
 		self.__log.debug("__reject called")
 		self.__log.debug("Invalid request: [%s]", self.__messageParser.getData())
-		self.__socket.send("ERROR: invalid request [" + self.__messageParser.getData() + "]")
+		self.__sendERR("invalid request [" + self.__messageParser.getData() + "]")
 	
-	def __sendERR(self):
-		self.__socket.send("ERR:" + self.__transactionId)
+	def __sendERR(self, msg = ""):
+		if(msg == ""):
+			self.__socket.send("ERR")
+		else:
+			self.__socket.send("ERR:" + msg)
 
-	def __sendOK(self):
-		self.__socket.send("OK:" + self.__transactionId)
+	def __sendOK(self, msg = ""):
+		if(msg == ""):
+			self.__socket.send("OK")
+		else:
+			self.__socket.send("OK:" + msg)
