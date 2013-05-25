@@ -10,7 +10,10 @@ def main(argv = None):
 	Logger.initLogger()
 	
 	client = ClientCore()
-	client.start()
+	try:
+		client.start()
+	except KeyboardInterrupt:
+		print "Client terminated"
 
 if __name__ == '__main__':
 	sys.exit(main())

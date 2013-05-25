@@ -19,7 +19,10 @@ def main(argv = None):
 	serverIP = argv[1]
 	serverPort = int(argv[2])
 	serverName = argv[3]
-	server.start(serverIP, serverPort, serverName)
+	try:
+		server.start(serverIP, serverPort, serverName)
+	except KeyboardInterrupt:
+		print "Server terminated"
 
 if __name__ == '__main__':
 	sys.exit(main())
