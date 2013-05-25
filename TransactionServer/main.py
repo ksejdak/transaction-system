@@ -21,8 +21,10 @@ def main(argv = None):
 	serverName = argv[3]
 	try:
 		server.start(serverIP, serverPort, serverName)
+	except IOError:
+		log.error("Server terminated")
 	except KeyboardInterrupt:
-		print "Server terminated"
+		log.info("Server terminated")
 
 if __name__ == '__main__':
 	sys.exit(main())

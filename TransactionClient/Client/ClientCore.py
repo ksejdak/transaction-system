@@ -1,4 +1,5 @@
 from subprocess import call
+from ConnectionManager import ConnectionManager
 from Utils.Logger import Logger
 from Utils.ServerList import ServerList
 from Utils.CommandParser import CommandParser
@@ -6,9 +7,10 @@ from Utils.CommandParser import CommandParser
 class ClientCore(object):
 	def __init__(self):
 		self.__log = Logger.getLogger()
-		self.__serverList = ServerList()
-		self.__serverList.parseList()
+		self.__servers = ServerList()
+		self.__servers.parseList()
 		self.__commandParser = CommandParser()
+		self.__connectionManager = ConnectionManager()
 
 	def start(self):
 		# start logging
@@ -18,16 +20,29 @@ class ClientCore(object):
 		while(True):
 			call(["clear"])
 			self.__printInfo()
-			command = raw_input()
-			message = self.__commandParser.parse(command)
-			self.__printOutput(message)
+			userCommand = raw_input()
+			
+			# parse user command, get destination server
+			serverCommand = self.__commandParser.parse(userCommand)
+			destinationServer = self.__commandParser.getDestinationServer()
+			
+			# send command
+			response = ""
+			if(destinationServer == ""):
+				for name in self.__servers.getNames():
+					response = self.__connectionManager.sendCommand(name, serverCommand)
+					self.__printOutput("[" + name + "]: " + response)
+			else:
+				response = self.__connectionManager.sendCommand(destinationServer, serverCommand)
+				self.__printOutput("[" + destinationServer + "]: " + response)
+
 			print
 			raw_input()
 			
 	def __printInfo(self):
 		# list all registered servers
 		print "POSSIBLE SERVERS:",
-		for name in self.__serverList.getNames():
+		for name in self.__servers.getNames():
 			print name,
 		print
 		

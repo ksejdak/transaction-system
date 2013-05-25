@@ -102,6 +102,7 @@ class WALRegister(object):
 			self.logAbort(transactionId)
 			self.logEnd(transactionId)
 			self.__resource.unlock(transactionId)
+			self.__log.debug("resource unlocked")
 	
 	def emergencyCommit(self, transactionId, emergency = False):
 		self.__log.debug("emergencyCommit called...")

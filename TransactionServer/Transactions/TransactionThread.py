@@ -41,7 +41,7 @@ class TransactionThread(Thread):
 			request = self.__socket.recv(512)
 			if(request == ""):
 				self.__log.info("Connection closed in thread [%s]", self.__name)
-				self.__walRegister.emergeBYEncyAbort(self.__transactionId, True)
+				self.__walRegister.emergencyAbort(self.__transactionId, True)
 				self.__log.info("Exiting transaction thread [%s]", self.__name)
 				thread.exit()
 
@@ -66,10 +66,11 @@ class TransactionThread(Thread):
 		if(self.__walRegister.isStarted(self.__transactionId) == True):
 			# check if transaction is commited
 			if(self.__walRegister.isCommited(self.__transactionId) == False):
-				self.__abort()
+				#self.__abort()
+				self.__walRegister.emergencyAbort(self.__transactionId, True)
 
 			self.__walRegister.logEnd(self.__transactionId)
-			self.__socket.send("BYE:" + self.__transactionId)
+			self.__socket.send("BYE")
 
 		self.__socket.close()
 		self.__log.info("Exiting transaction thread [%s]", self.__name)

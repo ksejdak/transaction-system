@@ -8,12 +8,15 @@ def main(argv = None):
 		argv = sys.argv
 	
 	Logger.initLogger()
+	log = Logger.getLogger()
 	
 	client = ClientCore()
 	try:
 		client.start()
+	except IOError:
+		log.error("Client terminated")
 	except KeyboardInterrupt:
-		print "Client terminated"
+		log.info("Client terminated")
 
 if __name__ == '__main__':
 	sys.exit(main())
