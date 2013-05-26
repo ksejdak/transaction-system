@@ -17,7 +17,8 @@ class TransactionManager(object):
 			"write": self.__write,
 			"commit": self.__commit,
 			"globalCommit": self.__globalCommit,
-			"abort": self.__abort
+			"abort": self.__abort,
+			"invalid": self.__reject
 		}
 		
 	def processCommand(self, commandType, destinationServer, command):
@@ -70,6 +71,9 @@ class TransactionManager(object):
 		for name in self.__servers.getNames():
 			response = self.__connectionManager.sendCommand(name, command)
 			self.__printOutput("[" + name + "]: " + response)
+
+	def __reject(self, destinationServer, command):
+		self.__log.error("Invalid command: [" + command + "]")
 
 	def __printOutput(self, data):
 		print ">>>", data

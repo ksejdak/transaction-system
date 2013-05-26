@@ -1,27 +1,32 @@
+import string
+
 class MessageParser(object):
 
 	def __init__(self):
 		self.__data = ""
 	
 	def parse(self, message):
-		if(message[0] == "R" or message[0] == "r"):
-			return "read"
-		elif(message[:2] == "W:" or message[:2] == "w:"):
-			# save string to be written to file
-			self.__data = message[2:]
-			return "write"
-		elif(message[:2] == "BT" or message[:2] == "bt"):
-			# save timestamp of the transaction
-			self.__data = message[1:]
+		words = string.split(message, ":")
+		
+		if(words[0] == "BT" or words[0] == "bt"):
 			return "begin"
-		elif(message[:2] == "ET" or message[:2] == "et"):
-			return "end"
-		elif(message[0] == "C" or message[0] == "c"):
+		elif(words[0] == "R" or words[0] == "r"):
+			return "read"
+		elif(words[0] == "W" or words[0] == "w"):
+			if(len(words) == 2):
+				# save string to be written to file
+				self.__data = words[1]
+				return "write"
+			else:
+				return "invalid"
+		elif(words[0] == "C" or words[0] == "c"):
 			return "commit"
-		elif(message[:2] == "GC" or message[:2] == "gc"):
+		elif(words[0] == "GC" or words[0] == "gc"):
 			return "globalCommit"
-		elif(message[0] == "A" or message[0] == "a"):
+		elif(words[0] == "A" or words[0] == "a"):
 			return "abort"
+		elif(words[0] == "ET" or words[0] == "et"):
+			return "end"
 		else:
 			self.__data = message
 			return "invalid"
