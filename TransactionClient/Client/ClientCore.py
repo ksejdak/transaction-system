@@ -1,5 +1,5 @@
 from subprocess import call
-from ConnectionManager import ConnectionManager
+from TransactionManager import TransactionManager
 from Utils.Logger import Logger
 from Utils.ServerList import ServerList
 from Utils.CommandParser import CommandParser
@@ -10,7 +10,7 @@ class ClientCore(object):
 		self.__servers = ServerList()
 		self.__servers.parseList()
 		self.__commandParser = CommandParser()
-		self.__connectionManager = ConnectionManager()
+		self.__transactionManager = TransactionManager()
 
 	def start(self):
 		# start logging
@@ -25,16 +25,10 @@ class ClientCore(object):
 			# parse user command, get destination server
 			serverCommand = self.__commandParser.parse(userCommand)
 			destinationServer = self.__commandParser.getDestinationServer()
+			commandType = self.__commandParser.getCommandType()
 			
-			# send command
-			response = ""
-			if(destinationServer == ""):
-				for name in self.__servers.getNames():
-					response = self.__connectionManager.sendCommand(name, serverCommand)
-					self.__printOutput("[" + name + "]: " + response)
-			else:
-				response = self.__connectionManager.sendCommand(destinationServer, serverCommand)
-				self.__printOutput("[" + destinationServer + "]: " + response)
+			# process command
+			self.__transactionManager.processCommand(commandType, destinationServer, serverCommand)
 
 			print
 			raw_input()
@@ -54,6 +48,3 @@ class ClientCore(object):
 		print "5) A			- abort transaction"
 		print "6) ET			- end transaction"
 		print "\n<<<",
-		
-	def __printOutput(self, data):
-		print ">>>", data

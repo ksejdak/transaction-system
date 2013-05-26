@@ -32,6 +32,7 @@ class ConnectionManager(object):
 		response = serverSocket.recv(512)
 		if(response == ""):
 			self.__log.error("Server died or closed connection")
+			raise IOError
 			return ""
 		else:
 			return response
