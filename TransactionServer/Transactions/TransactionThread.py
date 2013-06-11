@@ -96,7 +96,8 @@ class TransactionThread(Thread):
 				self.__log.debug("locking resource")
 				# try to lock resource
 				if(self.__resource.lock(self.__transactionId) == False):
-					self.__socket.send("DEADLOCK DETECTED:" + self.__transactionId)
+					#self.__socket.send("DEADLOCK DETECTED:" + self.__transactionId)
+					self.__sendERR("DEADLOCK DETECTED:" + self.__transactionId)
 					return
 				else:
 					self.__log.debug("resource locked")

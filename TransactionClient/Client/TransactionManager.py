@@ -1,3 +1,4 @@
+import string
 from ConnectionManager import ConnectionManager
 from Utils.ServerList import ServerList
 from Utils.Logger import Logger
@@ -44,6 +45,9 @@ class TransactionManager(object):
 	def __write(self, destinationServer, command):
 		response = self.__connectionManager.sendCommand(destinationServer, command)
 		self.__printOutput("[" + destinationServer + "]: " + response)
+		if(self.__checkResponseError(response) == True):
+			self.__log.info("Write failed, aborting...")
+			self.__abort("", "A")
 		
 	def __commit(self, destinationServer, command):
 		# phase 1: send C to all known servers
@@ -74,6 +78,13 @@ class TransactionManager(object):
 
 	def __reject(self, destinationServer, command):
 		self.__log.error("Invalid command: [" + command + "]")
+		
+	def __checkResponseError(self, response):
+		words = string.split(response, ":")
+		if(words[0] == "ERR"):
+			return True
+		
+		return False
 
 	def __printOutput(self, data):
 		print ">>>", data
