@@ -14,7 +14,6 @@ class TransactionManager(object):
 		# create functions mapping
 		self.__handlers = {
 			"begin": self.__begin,
-			"end": self.__end,
 			"read": self.__read,
 			"write": self.__write,
 			"commit": self.__commit,
@@ -33,12 +32,6 @@ class TransactionManager(object):
 			response = self.__connectionManager.sendCommand(name, command)
 			self.__printOutput("[" + name + "]: " + response)
 	
-	def __end(self, destinationServer, command):
-		response = ""
-		for name in self.__servers.getNames():
-			response = self.__connectionManager.sendCommand(name, command)
-			self.__printOutput("[" + name + "]: " + response)
-	
 	def __read(self, destinationServer, command):
 		response = self.__connectionManager.sendCommand(destinationServer, command)
 		self.__printOutput("[" + destinationServer + "]: " + response)
@@ -48,7 +41,7 @@ class TransactionManager(object):
 		self.__printOutput("[" + destinationServer + "]: " + response)
 		if(self.__checkResponseError(response) == True):
 			self.__log.info("Write failed, aborting...")
-			self.__abort("", "A")
+			self.__abort("", "A:" + self.__transactionId)
 		
 	def __commit(self, destinationServer, command):
 		# phase 1: send C to all known servers

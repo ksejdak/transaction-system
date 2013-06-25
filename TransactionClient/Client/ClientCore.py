@@ -49,7 +49,6 @@ class ClientCore(object):
 		print "3) W:<id>:<data>	- write <data> to reasource on server <id>"
 		print "4) C			- commit transaction"
 		print "5) A			- abort transaction"
-		print "6) ET			- end transaction"
 		print "\n<<<",
 	
 	def __generateId(self):

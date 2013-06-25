@@ -38,10 +38,6 @@ class CommandParser(object):
 			self.__destinationServer = ""
 			self.__commandType = "abort"
 			return "A:" + transactionId
-		elif(words[0] == "ET" or words[0] == "et"):
-			self.__destinationServer = ""
-			self.__commandType = "end"
-			return "ET"
 		else:
 			self.__commandType = "invalid"
 			return "invalid"
