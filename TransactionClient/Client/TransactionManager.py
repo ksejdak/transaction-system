@@ -4,7 +4,8 @@ from Utils.ServerList import ServerList
 from Utils.Logger import Logger
 
 class TransactionManager(object):
-	def __init__(self):
+	def __init__(self, transactionId):
+		self.__transactionId = transactionId
 		self.__log = Logger.getLogger()
 		self.__connectionManager = ConnectionManager()
 		self.__servers = ServerList()
@@ -53,18 +54,15 @@ class TransactionManager(object):
 		# phase 1: send C to all known servers
 		responseList = []
 		for name in self.__servers.getNames():
-			self.__log.debug("Sending C to " + name)
 			res = self.__connectionManager.sendCommand(name, command)
 			responseList.append(res)
 			
 		# count positive replies, then send GC or A
-		self.__log.debug("Got " + str(responseList.count("OK")) + " OK's")
 		if(responseList.count("OK") == len(self.__servers.getNames())):
-			self.__log.debug("Sending GC")
-			self.__globalCommit("", "GC:1111111111")
+			self.__globalCommit("", "GC:" + self.__transactionId)
 		else:
-			self.__log.info("Two-phase commit failed, aborting...")
-			self.__abort("", "A:1111111111")
+			self.__log.info("Two-phase commit failed (got " + responseList.count("OK") + " OK), aborting...")
+			self.__abort("", "A:" + self.__transactionId)
 	
 	def __globalCommit(self, destinationServer, command):
 		# phase 2: send GC to all known servers

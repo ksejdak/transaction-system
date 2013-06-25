@@ -1,3 +1,5 @@
+import string
+import random
 from subprocess import call
 from TransactionManager import TransactionManager
 from Utils.Logger import Logger
@@ -10,7 +12,8 @@ class ClientCore(object):
 		self.__servers = ServerList()
 		self.__servers.parseList()
 		self.__commandParser = CommandParser()
-		self.__transactionManager = TransactionManager()
+		self.__transacationId = str(self.__generateId())
+		self.__transactionManager = TransactionManager(self.__transacationId)
 
 	def start(self):
 		# start logging
@@ -23,7 +26,7 @@ class ClientCore(object):
 			userCommand = raw_input()
 			
 			# parse user command, get destination server
-			serverCommand = self.__commandParser.parse(userCommand)
+			serverCommand = self.__commandParser.parse(userCommand, self.__transacationId)
 			destinationServer = self.__commandParser.getDestinationServer()
 			commandType = self.__commandParser.getCommandType()
 			
@@ -48,3 +51,8 @@ class ClientCore(object):
 		print "5) A			- abort transaction"
 		print "6) ET			- end transaction"
 		print "\n<<<",
+	
+	def __generateId(self):
+		chars = string.ascii_uppercase + string.digits + string.ascii_lowercase + "!@#$%^&*()-=_+[]{};':?><,."
+		size = 16
+		return ''.join(random.choice(chars) for _ in range(size)),

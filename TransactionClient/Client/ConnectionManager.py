@@ -28,12 +28,21 @@ class ConnectionManager(object):
 		serverSocket = self.__sockets[serverName]
 		
 		# send command to server
-		self.__log.debug("Socket sending " + command)
-		serverSocket.send(command + "\n")
-		response = serverSocket.recv(512)
-		if(response == ""):
-			self.__log.error("Server died or closed connection")
-			raise IOError
-			return ""
-		else:
-			return response
+		self.__log.debug("Sending [" + command + "]")
+		serverSocket.sendall(command + "\n")
+		
+		response = ""
+		while(True):
+			response += serverSocket.recv(512)
+			
+			if(response == ""):
+				self.__log.error("Server died or closed connection")
+				raise IOError
+			
+			if(response[-1] == '\n'):
+				response = response[:-1]
+				break
+
+		response.rstrip()
+		self.__log.debug("Response [" + response + "]")
+		return response
