@@ -38,7 +38,11 @@ class TransactionThread(Thread):
 		
 	def run(self):
 		while(True):
+			#self.__log.debug("TU 1")
 			request = self.__socket.recv(512)
+			#self.__log.debug("TU 2")
+			#self.__socket.recv(512)
+			self.__log.debug("Request = " + request)
 			if(request == ""):
 				self.__log.info("Connection closed in thread [%s]", self.__name)
 				self.__walRegister.emergencyAbort(self.__transactionId, True)
@@ -55,7 +59,8 @@ class TransactionThread(Thread):
 		# check if transaction is already started
 		if(self.__walRegister.isStarted(self.__transactionId) == False):
 			self.__walRegister.logBegin(self.__transactionId)
-			self.__socket.send("HELLO")
+			self.__socket.send("HELLO\n")
+			self.__log.debug("Sending 'HELLO'")
 		else:
 			self.__sendERR()
 	
@@ -70,7 +75,8 @@ class TransactionThread(Thread):
 				self.__walRegister.emergencyAbort(self.__transactionId, True)
 
 			self.__walRegister.logEnd(self.__transactionId)
-			self.__socket.send("BYE")
+			self.__socket.send("BYE\n")
+			self.__log.debug("Sending 'BYE'")
 
 		self.__socket.close()
 		self.__log.info("Exiting transaction thread [%s]", self.__name)
@@ -157,16 +163,20 @@ class TransactionThread(Thread):
 	def __reject(self):
 		self.__log.debug("__reject called")
 		self.__log.debug("Invalid request: [%s]", self.__messageParser.getData())
-		self.__sendERR("invalid request [" + self.__messageParser.getData() + "]")
+		#self.__sendERR("invalid request [" + self.__messageParser.getData() + "]")
 	
 	def __sendERR(self, msg = ""):
 		if(msg == ""):
-			self.__socket.send("ERR")
+			self.__socket.send("ERR\n")
+			self.__log.debug("Sending 'ERR'")
 		else:
-			self.__socket.send("ERR:" + msg)
+			self.__socket.send("ERR:" + msg + "\n")
+			self.__log.debug("Sending '" + "ERR:" + msg + "'")
 
 	def __sendOK(self, msg = ""):
 		if(msg == ""):
-			self.__socket.send("OK")
+			self.__socket.send("OK\n")
+			self.__log.debug("Sending 'OK'")
 		else:
-			self.__socket.send("OK:" + msg)
+			self.__socket.send("OK:" + msg + "\n")
+			self.__log.debug("Sending '" + "OK:" + msg + "'")

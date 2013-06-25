@@ -14,7 +14,7 @@ class ServerList(object):
 		
 		# parse server list
 		for line in serverList:
-			words = string.split(line, "	")
+			words = string.split(line, ":")
 			serverName = words[0]
 			serverIP = words[1]
 			serverPort = words[2]

@@ -53,15 +53,18 @@ class TransactionManager(object):
 		# phase 1: send C to all known servers
 		responseList = []
 		for name in self.__servers.getNames():
+			self.__log.debug("Sending C to " + name)
 			res = self.__connectionManager.sendCommand(name, command)
 			responseList.append(res)
 			
 		# count positive replies, then send GC or A
+		self.__log.debug("Got " + str(responseList.count("OK")) + " OK's")
 		if(responseList.count("OK") == len(self.__servers.getNames())):
-			self.__globalCommit("", "GC")
+			self.__log.debug("Sending GC")
+			self.__globalCommit("", "GC:1111111111")
 		else:
 			self.__log.info("Two-phase commit failed, aborting...")
-			self.__abort("", "A")
+			self.__abort("", "A:1111111111")
 	
 	def __globalCommit(self, destinationServer, command):
 		# phase 2: send GC to all known servers

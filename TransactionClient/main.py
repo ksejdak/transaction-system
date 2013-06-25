@@ -10,7 +10,9 @@ def main(argv = None):
 	Logger.initLogger()
 	log = Logger.getLogger()
 	
+	print "aa"
 	client = ClientCore()
+	print "bb"
 	try:
 		client.start()
 	except IOError:

@@ -6,6 +6,7 @@ class MessageParser(object):
 		self.__data = ""
 	
 	def parse(self, message):
+		message.strip()
 		words = string.split(message, ":")
 		
 		if(words[0] == "BT" or words[0] == "bt"):
@@ -13,9 +14,9 @@ class MessageParser(object):
 		elif(words[0] == "R" or words[0] == "r"):
 			return "read"
 		elif(words[0] == "W" or words[0] == "w"):
-			if(len(words) == 2):
+			if(len(words) == 3):
 				# save string to be written to file
-				self.__data = words[1]
+				self.__data = words[2]
 				return "write"
 			else:
 				return "invalid"

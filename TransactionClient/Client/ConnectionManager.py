@@ -28,7 +28,8 @@ class ConnectionManager(object):
 		serverSocket = self.__sockets[serverName]
 		
 		# send command to server
-		serverSocket.send(command)
+		self.__log.debug("Socket sending " + command)
+		serverSocket.send(command + "\n")
 		response = serverSocket.recv(512)
 		if(response == ""):
 			self.__log.error("Server died or closed connection")

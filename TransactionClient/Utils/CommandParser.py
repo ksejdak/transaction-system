@@ -8,6 +8,7 @@ class CommandParser(object):
 		self.__commandType = ""
 	
 	def parse(self, message):
+		#message.strip()
 		words = string.split(message, ":")
 		
 		if(words[0] == "BT" or words[0] == "bt"):
@@ -18,7 +19,7 @@ class CommandParser(object):
 			if(len(words) == 2):
 				self.__destinationServer = words[1]
 				self.__commandType = "read"
-				return "R"
+				return "R:" + self.__generateId()
 			else:
 				self.__commandType = "invalid"
 				return "invalid"
@@ -26,18 +27,18 @@ class CommandParser(object):
 			if(len(words) == 3):
 				self.__destinationServer = words[1]
 				self.__commandType = "write"
-				return "W:" + words[2]
+				return "W:" + self.__generateId() + ":" + words[2]
 			else:
 				self.__commandType = "invalid"
 				return "invalid"
 		elif(words[0] == "C" or words[0] == "c"):
 			self.__destinationServer = ""
 			self.__commandType = "commit"
-			return "C"
+			return "C:" + self.__generateId()
 		elif(words[0] == "A" or words[0] == "a"):
 			self.__destinationServer = ""
 			self.__commandType = "abort"
-			return "A"
+			return "A:" + self.__generateId()
 		elif(words[0] == "ET" or words[0] == "et"):
 			self.__destinationServer = ""
 			self.__commandType = "end"
@@ -54,6 +55,7 @@ class CommandParser(object):
 		return self.__commandType
 	
 	def __generateId(self):
-		chars = string.ascii_uppercase + string.digits + string.ascii_lowercase + "!@#$%^&*()-=_+[]{};':?><,."
-		size = 16
-		return ''.join(random.choice(chars) for _ in range(size))
+		#chars = string.ascii_uppercase + string.digits + string.ascii_lowercase + "!@#$%^&*()-=_+[]{};':?><,."
+		#size = 16
+		#return ''.join(random.choice(chars) for _ in range(size)),
+		return "1111111111"
