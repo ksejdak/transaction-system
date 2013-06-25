@@ -6,7 +6,7 @@ class MessageParser(object):
 		self.__data = ""
 	
 	def parse(self, message):
-		message.strip()
+		message.rstrip()
 		words = string.split(message, ":")
 		
 		if(words[0] == "BT" or words[0] == "bt"):

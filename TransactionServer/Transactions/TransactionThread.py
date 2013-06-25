@@ -37,17 +37,21 @@ class TransactionThread(Thread):
 		}
 		
 	def run(self):
-		while(True):
-			#self.__log.debug("TU 1")
-			request = self.__socket.recv(512)
-			#self.__log.debug("TU 2")
-			#self.__socket.recv(512)
-			self.__log.debug("Request = " + request)
-			if(request == ""):
-				self.__log.info("Connection closed in thread [%s]", self.__name)
-				self.__walRegister.emergencyAbort(self.__transactionId, True)
-				self.__log.info("Exiting transaction thread [%s]", self.__name)
-				thread.exit()
+		while(True):			
+			request = ""
+			while(True):
+				request += self.__socket.recv(512)
+				if(request == ""):
+					self.__log.info("Connection closed in thread [%s]", self.__name)
+					self.__walRegister.emergencyAbort(self.__transactionId, True)
+					self.__log.info("Exiting transaction thread [%s]", self.__name)
+					thread.exit()
+			
+				if(request[-1] == '\n'):
+					request = request[:-1]
+					break
+			
+			self.__log.debug("Request [" + request + "]")
 
 			requestType = self.__messageParser.parse(request)
 			requestHandler = self.__handlers[requestType]
@@ -163,20 +167,16 @@ class TransactionThread(Thread):
 	def __reject(self):
 		self.__log.debug("__reject called")
 		self.__log.debug("Invalid request: [%s]", self.__messageParser.getData())
-		#self.__sendERR("invalid request [" + self.__messageParser.getData() + "]")
+		self.__sendERR("invalid request [" + self.__messageParser.getData() + "]")
 	
 	def __sendERR(self, msg = ""):
 		if(msg == ""):
 			self.__socket.send("ERR\n")
-			self.__log.debug("Sending 'ERR'")
 		else:
 			self.__socket.send("ERR:" + msg + "\n")
-			self.__log.debug("Sending '" + "ERR:" + msg + "'")
 
 	def __sendOK(self, msg = ""):
 		if(msg == ""):
 			self.__socket.send("OK\n")
-			self.__log.debug("Sending 'OK'")
 		else:
 			self.__socket.send("OK:" + msg + "\n")
-			self.__log.debug("Sending '" + "OK:" + msg + "'")
