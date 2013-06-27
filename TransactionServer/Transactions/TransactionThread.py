@@ -64,7 +64,6 @@ class TransactionThread(Thread):
 		if(self.__walRegister.isStarted(self.__transactionId) == False):
 			self.__walRegister.logBegin(self.__transactionId)
 			self.__socket.send("HELLO\n")
-			self.__log.debug("Sending 'HELLO'")
 		else:
 			self.__sendERR()
 	
@@ -79,8 +78,6 @@ class TransactionThread(Thread):
 				self.__walRegister.emergencyAbort(self.__transactionId, True)
 
 			self.__walRegister.logEnd(self.__transactionId)
-			self.__socket.send("BYE\n")
-			self.__log.debug("Sending 'BYE'")
 
 		self.__socket.close()
 		self.__log.info("Exiting transaction thread [%s]", self.__name)
@@ -106,8 +103,7 @@ class TransactionThread(Thread):
 				self.__log.debug("locking resource")
 				# try to lock resource
 				if(self.__resource.lock(self.__transactionId) == False):
-					#self.__socket.send("DEADLOCK DETECTED:" + self.__transactionId)
-					self.__sendERR("DEADLOCK DETECTED:" + self.__transactionId)
+					self.__sendERR("DEADLOCK DETECTED")
 					return
 				else:
 					self.__log.debug("resource locked")
@@ -144,7 +140,7 @@ class TransactionThread(Thread):
 				self.__resourceOwned = False
 				self.__log.debug("resource unlocked")
 
-			self.__sendOK()
+			self.__end()
 		else:
 			self.__sendERR()
 	
@@ -160,7 +156,7 @@ class TransactionThread(Thread):
 				self.__resource.unlock(self.__transactionId)
 				self.__resourceOwned = False
 				self.__log.debug("resource unlocked")
-			self.__sendOK()
+			self.__end()
 		else:
 			self.__sendERR()
 	
